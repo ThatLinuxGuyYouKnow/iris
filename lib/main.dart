@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       providers: [ChangeNotifierProvider<ScreenProvider>(create: (_) => ScreenProvider())],
       child: MaterialApp(
         title: 'Iris',
-        theme: theme,
+        theme: buildAppTheme(),
         home: MasterScreen(),
         debugShowCheckedModeBanner: false,
       ),
