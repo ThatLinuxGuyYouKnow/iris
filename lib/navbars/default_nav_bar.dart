@@ -17,10 +17,7 @@ class DefaultNavBar extends StatelessWidget {
       items: [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Saved'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.verified_user),
-          label: 'Profile',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.groups), label: 'Community'),
       ],
     );
   }
