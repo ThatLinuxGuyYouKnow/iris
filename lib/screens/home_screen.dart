@@ -11,10 +11,17 @@ class HomeScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text('Campus Navigation', style: TextStyle(fontSize: 25)),
+          ),
           StartAudioCaptureWidget(
             buttonText: 'Use voice controls',
             onButtonPressed: () {},
           ),
+          SizedBox(height: 20),
+          Text('Tap to start voice controls'),
+          SizedBox(height: 10),
           OpenCameraView(onButtonPressed: () {}),
         ],
       ),

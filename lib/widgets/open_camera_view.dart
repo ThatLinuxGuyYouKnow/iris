@@ -15,7 +15,7 @@ class OpenCameraView extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.blue,
           shape: BoxShape.rectangle,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
