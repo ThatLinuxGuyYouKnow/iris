@@ -52,8 +52,19 @@ class GroundedAnswer {
 /// not accept multimodal input — so the two run as parallel requests and are
 /// merged by [SceneMerger].
 ///
-/// The API key is read from `--dart-define=GEMINI_API_KEY=...` so it never
-/// lands in the repo. Call `isConfigured` to check at runtime.
+/// ## Key handling — two modes
+///
+/// **Proxy mode (production, default):** When no `GEMINI_API_KEY` dart-define
+/// is set, the client calls `/api/gemini` — a Netlify serverless function
+/// that holds the key server-side and forwards to Gemini. The key never
+/// lands in the deployed client bundle.
+///
+/// **Direct mode (local dev):** When `--dart-define=GEMINI_API_KEY=...` is
+/// set, the client calls Gemini REST directly with the key in the URL. This
+/// is the fast path for `flutter run` without needing `netlify dev`.
+///
+/// `isConfigured` is true in either mode (proxy is always configured in
+/// production; direct requires the key).
 class GeminiService {
   static final GeminiService _instance = GeminiService._internal();
   factory GeminiService() => _instance;
@@ -63,8 +74,13 @@ class GeminiService {
   static const String _endpointBase =
       'https://generativelanguage.googleapis.com/v1beta/models';
 
+  /// Proxy endpoint served by `netlify/functions/gemini.js`. Relative URL so
+  /// it works on any origin (Netlify, `netlify dev`, or a local proxy).
+  static const String _proxyEndpoint = '/api/gemini';
+
   /// Read once at compile time from `--dart-define=GEMINI_API_KEY=...`.
-  /// Empty by default so the app compiles key-less for layout testing.
+  /// Empty by default so the app compiles key-less for layout testing and
+  /// falls through to proxy mode in production.
   static const String _apiKeyFromEnv =
       String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
@@ -77,7 +93,13 @@ class GeminiService {
   static void setRuntimeKeyOverride(String? key) => _runtimeKeyOverride = key;
 
   String get _apiKey => _runtimeKeyOverride ?? _apiKeyFromEnv;
-  bool get isConfigured => _apiKey.isNotEmpty;
+
+  /// True when either mode is available: proxy (always, in production) or
+  /// direct (when a key is set).
+  bool get isConfigured => true;
+
+  /// True when the client will call Gemini directly (local dev path).
+  bool get _useDirectMode => _apiKey.isNotEmpty;
 
   String get _model => _defaultModel;
 
@@ -95,17 +117,15 @@ Describe ONLY what is concretely visible in the image.
 ''';
 
   /// Vision call: a single JPEG frame -> a short scene description safe to
-  /// speak via [TextToSpeechService]. Throws if not configured or the API
-  /// returns an error; callers should catch and degrade gracefully.
+  /// speak via [TextToSpeechService]. Throws if the API returns an error;
+  /// callers should catch and degrade gracefully.
   Future<String> describeScene(
     String base64Jpeg, {
     String userPrompt =
         'Describe what is immediately around me so I can walk safely.',
     Duration timeout = const Duration(seconds: 8),
   }) async {
-    _requireKey();
-    final uri = Uri.parse('$_endpointBase/$_model:generateContent?key=$_apiKey');
-    final body = jsonEncode({
+    final body = {
       'system_instruction': {
         'parts': [
           {'text': _visionSystemInstruction},
@@ -130,11 +150,9 @@ Describe ONLY what is concretely visible in the image.
         'maxOutputTokens': 200,
         'topP': 0.9,
       },
-    });
+    };
 
-    final resp = await http
-        .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
-        .timeout(timeout);
+    final resp = await _postGenerateContent(body, timeout: timeout);
     final text = _extractText(resp);
     return text.trim();
   }
@@ -150,9 +168,7 @@ Describe ONLY what is concretely visible in the image.
     required double longitude,
     Duration timeout = const Duration(seconds: 8),
   }) async {
-    _requireKey();
-    final uri = Uri.parse('$_endpointBase/$_model:generateContent?key=$_apiKey');
-    final body = jsonEncode({
+    final body = {
       'contents': [
         {
           'role': 'user',
@@ -178,25 +194,38 @@ Describe ONLY what is concretely visible in the image.
         'temperature': 0.3,
         'maxOutputTokens': 300,
       },
-    });
+    };
 
-    final resp = await http
-        .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
-        .timeout(timeout);
-
+    final resp = await _postGenerateContent(body, timeout: timeout);
     final text = _extractText(resp);
     final sources = _extractGroundingSources(resp);
     return GroundedAnswer(text: text.trim(), sources: sources);
   }
 
-  void _requireKey() {
-    if (_apiKey.isEmpty) {
-      throw StateError(
-        'Gemini API key not set. Run with '
-        '--dart-define=GEMINI_API_KEY=<your-key> '
-        'or call GeminiService.setRuntimeKeyOverride(...).',
-      );
+  /// Shared transport: sends a generateContent body to Gemini, either
+  /// directly (local dev with key) or via the serverless proxy (production).
+  /// Both paths return the same Gemini response shape.
+  Future<http.Response> _postGenerateContent(
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final jsonBody = jsonEncode(body);
+    const headers = {'Content-Type': 'application/json'};
+
+    if (_useDirectMode) {
+      final uri = Uri.parse(
+          '$_endpointBase/$_model:generateContent?key=$_apiKey');
+      return http
+          .post(uri, headers: headers, body: jsonBody)
+          .timeout(timeout);
     }
+
+    // Proxy mode: wrap the body with the model name and POST to the
+    // serverless function. The proxy adds the key server-side.
+    final wrapped = jsonEncode({'model': _model, 'body': body});
+    return http
+        .post(Uri.parse(_proxyEndpoint), headers: headers, body: wrapped)
+        .timeout(timeout);
   }
 
   String _extractText(http.Response resp) {

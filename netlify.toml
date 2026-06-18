@@ -1,0 +1,31 @@
+[build]
+  command = "bash scripts/build-netlify.sh"
+  publish = "build/web"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA redirect: all routes serve index.html (Flutter web is a single-page app)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Proxy /api/gemini to the serverless function
+[[redirects]]
+  from = "/api/gemini"
+  to = "/.netlify/functions/gemini"
+  status = 200
+
+# Prevent caching of index.html so new deploys are picked up immediately
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Cache Flutter's main.dart.js aggressively (it's content-hashed)
+[[headers]]
+  for = "/main.dart.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
