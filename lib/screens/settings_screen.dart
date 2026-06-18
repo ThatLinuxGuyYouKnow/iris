@@ -10,7 +10,7 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: kBackground,
       appBar: const SettingsAppBar(),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         child: Column(
           children: [
@@ -28,9 +28,11 @@ class SettingsScreen extends StatelessWidget {
                     child: const Icon(Icons.volume_up, color: kPrimaryAccent),
                   ),
                   const SizedBox(width: 16),
-                  Text(
-                    'Voice settings coming soon',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  Expanded(
+                    child: Text(
+                      'Voice settings coming soon',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
                 ],
               ),

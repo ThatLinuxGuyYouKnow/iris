@@ -78,35 +78,37 @@ class _RouteScreenState extends State<RouteScreen> {
       _gpsStatus = 'Location not supported in this browser.';
       return;
     }
-    _positionSub = _geo.watchPosition(highAccuracy: true).listen(
-      (pos) {
-        if (!mounted) return;
-        setState(() {
-          _userPosition = pos;
-          _gpsStatus = null;
-        });
-      },
-      onError: (Object e) {
-        if (!mounted) return;
-        final msg = e is GeolocationException ? e.humanDescription : '$e';
-        setState(() => _gpsStatus = msg);
-      },
-    );
+    _positionSub = _geo
+        .watchPosition(highAccuracy: true)
+        .listen(
+          (pos) {
+            if (!mounted) return;
+            setState(() {
+              _userPosition = pos;
+              _gpsStatus = null;
+            });
+          },
+          onError: (Object e) {
+            if (!mounted) return;
+            final msg = e is GeolocationException ? e.humanDescription : '$e';
+            setState(() => _gpsStatus = msg);
+          },
+        );
   }
 
   void _recenterOnMe() {
     final pos = _userPosition;
     if (pos == null) return;
-    _mapController.move(
-      LatLng(pos.latitude, pos.longitude),
-      18,
-    );
+    _mapController.move(LatLng(pos.latitude, pos.longitude), 18);
   }
 
   void _recompute() {
     if (_startId == null || _endId == null) return;
-    final result =
-        _engine.routeBetween(_startId!, _endId!, activeHazards: _hazards);
+    final result = _engine.routeBetween(
+      _startId!,
+      _endId!,
+      activeHazards: _hazards,
+    );
     setState(() => _route = result);
     if (result.polyline.length >= 2) {
       // Fit the map to the computed path once the map has rendered.
@@ -127,8 +129,10 @@ class _RouteScreenState extends State<RouteScreen> {
     final km = (r.distanceMetres / 1000).toStringAsFixed(2);
     final turns = r.waypoints.length - 1;
     final buffer = StringBuffer()
-      ..write('Route from ${r.waypoints.first.label} to '
-          '${r.waypoints.last.label}. ')
+      ..write(
+        'Route from ${r.waypoints.first.label} to '
+        '${r.waypoints.last.label}. ',
+      )
       ..write('About $km kilometres, $turns turns. ');
     if (r.encounteredHazards.isEmpty) {
       buffer.write('No reported hazards on this path.');
@@ -151,9 +155,9 @@ class _RouteScreenState extends State<RouteScreen> {
     if (name == null || name.trim().isEmpty) return;
     await RouteStore.instance.saveRoute(name.trim(), _route.polyline);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Saved route "$name"')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Saved route "$name"')));
   }
 
   Future<String?> _promptForName() {
@@ -192,35 +196,54 @@ class _RouteScreenState extends State<RouteScreen> {
     return Scaffold(
       backgroundColor: kBackground,
       appBar: AppBar(title: const Text('Route')),
-      body: Column(
-        children: [
-          _selectors(),
-          Expanded(child: Stack(
-            children: [
-              _map(),
-              if (_gpsStatus != null)
-                Positioned(
-                  top: 8,
-                  left: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orangeAccent),
-                    ),
-                    child: Text(
-                      _gpsStatus!,
-                      style: const TextStyle(fontSize: 12, color: kTextPrimary),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final mapHeight = (constraints.maxHeight * 0.52).clamp(280.0, 520.0);
+
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                children: [
+                  _selectors(),
+                  SizedBox(
+                    height: mapHeight,
+                    child: Stack(
+                      children: [
+                        _map(),
+                        if (_gpsStatus != null)
+                          Positioned(
+                            top: 8,
+                            left: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orangeAccent),
+                              ),
+                              child: Text(
+                                _gpsStatus!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: kTextPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-            ],
-          )),
-          _summaryPanel(),
-        ],
+                  _summaryPanel(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.small(
         onPressed: _userPosition == null ? null : _recenterOnMe,
@@ -236,15 +259,19 @@ class _RouteScreenState extends State<RouteScreen> {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Row(
         children: [
-          Expanded(child: _nodeDropdown('From', _startId, (v) {
-            _startId = v;
-            _recompute();
-          })),
+          Expanded(
+            child: _nodeDropdown('From', _startId, (v) {
+              _startId = v;
+              _recompute();
+            }),
+          ),
           const SizedBox(width: 8),
-          Expanded(child: _nodeDropdown('To', _endId, (v) {
-            _endId = v;
-            _recompute();
-          })),
+          Expanded(
+            child: _nodeDropdown('To', _endId, (v) {
+              _endId = v;
+              _recompute();
+            }),
+          ),
         ],
       ),
     );
@@ -257,8 +284,10 @@ class _RouteScreenState extends State<RouteScreen> {
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: kGlassDecoration(opacity: 0.05, borderRadius: 12)
-          .copyWith(border: Border.all(color: kDivider)),
+      decoration: kGlassDecoration(
+        opacity: 0.05,
+        borderRadius: 12,
+      ).copyWith(border: Border.all(color: kDivider)),
       child: DropdownButton<String>(
         value: value,
         isExpanded: true,
@@ -275,8 +304,9 @@ class _RouteScreenState extends State<RouteScreen> {
 
   Widget _map() {
     final user = _userPosition;
-    final userLatLng =
-        user == null ? null : LatLng(user.latitude, user.longitude);
+    final userLatLng = user == null
+        ? null
+        : LatLng(user.latitude, user.longitude);
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
