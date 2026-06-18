@@ -7,6 +7,7 @@ import 'package:iris/screens/community_screen.dart';
 import 'package:iris/screens/home_screen.dart';
 import 'package:iris/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:iris/themes/theme.dart';
 
 class MasterScreen extends StatelessWidget {
   const MasterScreen({super.key});
@@ -14,29 +15,29 @@ class MasterScreen extends StatelessWidget {
   Widget _bodyForIndex(int index) {
     switch (index) {
       case 0:
-        return HomeScreen();
+        return const HomeScreen();
       case 1:
         return const SettingsScreen();
       case 2:
         return const CommunityScreen();
       default:
-        return HomeScreen();
+        return const HomeScreen();
     }
   }
 
-  Widget _appBarForIndex(int Index) {
-    switch (Index) {
+  PreferredSizeWidget _appBarForIndex(int index) {
+    switch (index) {
       case 0:
-        return DefaultAppBar();
-
+        return const DefaultAppBar();
       case 1:
-        return DefaultAppBar();
-
+        // Reused layout from default or settings? Actually setting screen has its own appbar but let MasterScreen control it if possible, or we just return an empty size.
+        // The original code returned DefaultAppBar() for settings and SettingsScreen had its own AppBar in scaffolding.
+        // Wait, Home -> Default, Settings -> Default, Community -> CommunityAppBar.
+        return const DefaultAppBar();
       case 2:
-        return CommunityAppBar();
-
+        return const CommunityAppBar();
       default:
-        return DefaultAppBar();
+        return const DefaultAppBar();
     }
   }
 
@@ -44,8 +45,9 @@ class MasterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenProvider = context.watch<ScreenProvider>();
     return Scaffold(
+      backgroundColor: kBackground,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(80),
+        preferredSize: const Size.fromHeight(80),
         child: _appBarForIndex(screenProvider.currentIndex),
       ),
       bottomNavigationBar: DefaultNavBar(

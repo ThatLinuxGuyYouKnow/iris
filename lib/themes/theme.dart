@@ -1,46 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const _primaryColor = Colors.blue;
-const _secondaryColor = Colors.lightBlue;
-const _surfaceColor = Colors.white;
+const Color kBackground = Colors.white;
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kCard = Colors.white;
+const Color kPrimaryAccent = Color(0xFF0D5AFF);
+const Color kSecondaryAccent = Color(0xFF0D5AFF);
+const Color kTertiaryAccent = Color(0xFF00E5A0);
+const Color kTextPrimary = Color(0xFF001F54);
+const Color kTextSecondary = Color(0xFF1A3B66);
+const Color kDivider = Color(0xFFE5E7EB);
 
-/// The default app font weight.
-///
-/// Defaults to [FontWeight.w500] (Ubuntu Medium) for good readability.
+const LinearGradient kAccentGradient = LinearGradient(
+  colors: [kPrimaryAccent, kSecondaryAccent],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+const LinearGradient kSubtleGradient = LinearGradient(
+  colors: [Color(0xFFF5F7FA), Color(0xFFE8EBF2)],
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+);
+
 const FontWeight kDefaultFontWeight = FontWeight.w500;
 
-/// Creates the app theme using the Ubuntu font family.
-///
-/// The default [fontWeight] is [FontWeight.w500] (Ubuntu Medium), but it can
-/// be configured to any other weight such as [FontWeight.w300] (light),
-/// [FontWeight.w400] (regular), or [FontWeight.w700] (bold).
 ThemeData buildAppTheme({FontWeight fontWeight = kDefaultFontWeight}) {
-  return ThemeData(
+  final baseTextTheme = GoogleFonts.interTextTheme();
+
+  return ThemeData.light().copyWith(
+    scaffoldBackgroundColor: kBackground,
     colorScheme: const ColorScheme.light(
-      primary: _primaryColor,
-      secondary: _secondaryColor,
-      surface: _surfaceColor,
+      primary: kPrimaryAccent,
+      secondary: kSecondaryAccent,
+      surface: kSurface,
+      onPrimary: kBackground,
+      onSecondary: Colors.white,
+      onSurface: kTextPrimary,
     ),
-    textTheme: TextTheme(
-      bodyMedium: GoogleFonts.ubuntu(
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: kTextPrimary,
+      ),
+      iconTheme: IconThemeData(color: kPrimaryAccent),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: kSurface,
+      selectedItemColor: kPrimaryAccent,
+      unselectedItemColor: kTextSecondary,
+      type: BottomNavigationBarType.fixed,
+      elevation: 0,
+    ),
+    cardTheme: CardThemeData(
+      color: kCard,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    dividerColor: kDivider,
+    textTheme: baseTextTheme.copyWith(
+      bodyMedium: GoogleFonts.inter(
         fontSize: 15,
         fontWeight: fontWeight,
-        color: Colors.black,
+        color: kTextPrimary,
       ),
-      titleLarge: GoogleFonts.ubuntu(
+      bodySmall: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: kTextSecondary,
+      ),
+      titleLarge: GoogleFonts.inter(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: kTextPrimary,
+      ),
+      titleMedium: GoogleFonts.inter(
         fontSize: 18,
-        fontWeight: fontWeight,
-        color: Colors.blue,
+        fontWeight: FontWeight.w600,
+        color: kTextPrimary,
+      ),
+      headlineLarge: GoogleFonts.inter(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: kTextPrimary,
+      ),
+      labelMedium: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: kTextSecondary,
+        letterSpacing: 0.8,
       ),
     ),
   );
 }
 
-/// Default header style using Ubuntu with the configured font weight.
-TextStyle kHeaderStyle({FontWeight fontWeight = kDefaultFontWeight}) {
-  return GoogleFonts.ubuntu(
-    color: Colors.blue,
-    fontWeight: fontWeight,
+BoxDecoration kGlassDecoration({
+  double opacity = 0.7,
+  double borderRadius = 16,
+  Color? borderColor,
+}) {
+  return BoxDecoration(
+    color: kPrimaryAccent.withValues(alpha: opacity * 0.15),
+    borderRadius: BorderRadius.circular(borderRadius),
+    border: Border.all(
+      color: borderColor ?? kDivider,
+      width: 1,
+    ),
   );
 }

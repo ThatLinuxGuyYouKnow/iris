@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Iris',
         theme: buildAppTheme(),
-        home: MasterScreen(),
+        home: const MasterScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );
