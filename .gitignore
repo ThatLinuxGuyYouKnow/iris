@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets — never commit API keys or env files
+.env
+.env.*
+*.env
+secrets.json

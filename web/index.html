@@ -18,12 +18,12 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Computer Vision based campus Navigation app for visually impaired people.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="iris">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Iris">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
@@ -31,6 +31,11 @@
 
   <title>iris</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- TensorFlow.js + COCO-SSD for on-device obstacle detection in the PWA -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+  <script src="obstacle_detection.js" defer></script>
 </head>
 <body>
   <!--
@@ -40,7 +45,7 @@
 
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+    -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,11 +1,11 @@
 {
-    "name": "iris",
-    "short_name": "iris",
+    "name": "Iris - Campus Navigation",
+    "short_name": "Iris",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B0F1A",
+    "theme_color": "#00C9FF",
+    "description": "Computer Vision based campus Navigation app for visually impaired people.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
