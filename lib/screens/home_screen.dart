@@ -119,25 +119,30 @@ class _HomeScreenState extends State<HomeScreen> {
     } on GeolocationException catch (e) {
       if (!mounted) return;
       _tts.speak(e.humanDescription);
-      setState(() => _lastReport = SceneReport(
-        spokenText: e.humanDescription,
-        sources: const [],
-        layersUsed: const {Layer.gps},
-        degraded: true,
-        fallbackNote: 'geolocation: ${e.code}',
-      ));
+      setState(
+        () => _lastReport = SceneReport(
+          spokenText: e.humanDescription,
+          sources: const [],
+          layersUsed: const {Layer.gps},
+          degraded: true,
+          fallbackNote: 'geolocation: ${e.code}',
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      final msg = 'I can\'t get a reading right now. '
+      final msg =
+          'I can\'t get a reading right now. '
           'Use the human-verified audio cue.';
       _tts.speak(msg);
-      setState(() => _lastReport = SceneReport(
-        spokenText: msg,
-        sources: const [],
-        layersUsed: const {Layer.gps},
-        degraded: true,
-        fallbackNote: '$e',
-      ));
+      setState(
+        () => _lastReport = SceneReport(
+          spokenText: msg,
+          sources: const [],
+          layersUsed: const {Layer.gps},
+          degraded: true,
+          fallbackNote: '$e',
+        ),
+      );
     } finally {
       if (mounted) setState(() => _whereAmIBusy = false);
     }
@@ -162,111 +167,109 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(color: kBackground),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Iris',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: kPrimaryAccent,
-                    fontSize: 64,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'How can I help you get\nsomewhere today?',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: kTextPrimary,
-                    fontWeight: FontWeight.w400,
-                  ),
-            ),
-            const SizedBox(height: 16),
-
-            // Transcript Display
-            if (_transcript.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
+    return SingleChildScrollView(
+      child: Container(
+        decoration: const BoxDecoration(color: kBackground),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Iris',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: kPrimaryAccent,
+                  fontSize: 64,
                 ),
-                padding: const EdgeInsets.all(20),
-                decoration: kGlassDecoration(),
-                child: Text(
-                  '"$_transcript"',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: kPrimaryAccent,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'How can I help you get\nsomewhere today?',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: kTextPrimary,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Transcript Display
+              if (_transcript.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
                   ),
-                  textAlign: TextAlign.center,
+                  padding: const EdgeInsets.all(20),
+                  decoration: kGlassDecoration(),
+                  child: Text(
+                    '"$_transcript"',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: kPrimaryAccent,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              StartAudioCaptureWidget(
+                buttonText: 'Use voice controls',
+                onButtonPressed: _toggleListening,
+                isListening: _sttStatus == SttStatus.listening,
+              ),
+
+              const SizedBox(height: 30),
+
+              Text(
+                _getStatusText(),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _sttStatus == SttStatus.error
+                      ? Colors.redAccent
+                      : kTextSecondary,
                 ),
               ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 40),
 
-            StartAudioCaptureWidget(
-              buttonText: 'Use voice controls',
-              onButtonPressed: _toggleListening,
-              isListening: _sttStatus == SttStatus.listening,
-            ),
-
-            const SizedBox(height: 30),
-
-            Text(
-              _getStatusText(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _sttStatus == SttStatus.error
-                    ? Colors.redAccent
-                    : kTextSecondary,
+              OpenCameraView(
+                onButtonPressed: () {
+                  _tts.speak('Starting camera. Please wait.');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CameraScreen()),
+                  );
+                },
               ),
-            ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 16),
 
-            OpenCameraView(
-              onButtonPressed: () {
-                _tts.speak('Starting camera. Please wait.');
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CameraScreen(),
-                  ),
-                );
-              },
-            ),
+              OpenCameraView(
+                onButtonPressed: () {
+                  _tts.speak('Opening routing map.');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RouteScreen()),
+                  );
+                },
+                icon: Icons.map_outlined,
+                label: 'Plan a route',
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            OpenCameraView(
-              onButtonPressed: () {
-                _tts.speak('Opening routing map.');
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const RouteScreen(),
-                  ),
-                );
-              },
-              icon: Icons.map_outlined,
-              label: 'Plan a route',
-            ),
+              OpenCameraView(
+                onButtonPressed: _whereAmIBusy ? null : _whereAmI,
+                icon: Icons.my_location,
+                label: _whereAmIBusy ? 'Locating…' : 'Where am I?',
+              ),
 
-            const SizedBox(height: 16),
-
-            OpenCameraView(
-              onButtonPressed: _whereAmIBusy ? null : _whereAmI,
-              icon: Icons.my_location,
-              label: _whereAmIBusy ? 'Locating…' : 'Where am I?',
-            ),
-
-            if (_lastReport != null) ...[
-              const SizedBox(height: 24),
-              _sceneReportCard(_lastReport!, _lastFix),
+              if (_lastReport != null) ...[
+                const SizedBox(height: 24),
+                _sceneReportCard(_lastReport!, _lastFix),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -288,9 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? Icons.cloud_off_outlined
                     : Icons.check_circle_outline,
                 size: 18,
-                color: report.degraded
-                    ? Colors.orangeAccent
-                    : kTertiaryAccent,
+                color: report.degraded ? Colors.orangeAccent : kTertiaryAccent,
               ),
               const SizedBox(width: 6),
               Expanded(
