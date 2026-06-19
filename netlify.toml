@@ -18,6 +18,18 @@
   to = "/.netlify/functions/gemini"
   status = 200
 
+# Proxy /api/whereami to the RapidAPI serverless function
+[[redirects]]
+  from = "/api/whereami"
+  to = "/.netlify/functions/whereami"
+  status = 200
+
+# Proxy /api/narration to the Kimi K2.6 serverless function
+[[redirects]]
+  from = "/api/narration"
+  to = "/.netlify/functions/narration"
+  status = 200
+
 # Prevent caching of index.html so new deploys are picked up immediately
 [[headers]]
   for = "/index.html"
