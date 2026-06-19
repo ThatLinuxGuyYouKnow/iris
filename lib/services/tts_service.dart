@@ -89,11 +89,33 @@ class TextToSpeechService {
     }
   }
 
+  web.HTMLAudioElement? _currentAudio;
+
+  void playAudio(String assetPath) {
+    try {
+      _currentAudio?.pause();
+      _currentAudio?.remove();
+      final audio = web.HTMLAudioElement();
+      audio.src = 'assets/audio/$assetPath';
+      audio.play();
+      _currentAudio = audio;
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
   void stop() {
     try {
       web.window.speechSynthesis.cancel();
     } catch (e) {
       print('Error stopping TTS: $e');
+    }
+    try {
+      _currentAudio?.pause();
+      _currentAudio?.remove();
+      _currentAudio = null;
+    } catch (e) {
+      print('Error stopping audio: $e');
     }
   }
 }

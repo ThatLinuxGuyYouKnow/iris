@@ -146,7 +146,12 @@ class _RouteScreenState extends State<RouteScreen> {
 
   Future<void> _speakRoute() async {
     final desc = _describe(_route);
-    if (desc.isNotEmpty) _tts.speak(desc);
+    if (desc.isNotEmpty) {
+      if (_route.encounteredHazards.isNotEmpty) {
+        _tts.playAudio('heads_up_obstacle_closeby.mp3');
+      }
+      _tts.speak(desc);
+    }
   }
 
   Future<void> _saveRoute() async {

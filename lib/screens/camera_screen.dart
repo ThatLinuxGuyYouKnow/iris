@@ -57,7 +57,7 @@ class _CameraScreenState extends State<CameraScreen> {
         setState(() => _isLoading = false);
       }
 
-      _tts.speak('Camera active. Scanning for obstacles.');
+      _tts.playAudio('camera_active.mp3');
       _startDetectionLoop();
     } catch (e) {
       if (mounted) {
@@ -99,21 +99,21 @@ class _CameraScreenState extends State<CameraScreen> {
     switch (detection.proximity) {
       case Proximity.immediate:
         if (!_alertedImmediate) {
-          _tts.speak(proximityAnnouncement(detection.proximity, detection.label));
+          _tts.playAudio('heads_up_obstacle_closeby.mp3');
           _alertedImmediate = true;
           _alertedClose = true;
           _alertedNearby = true;
         }
       case Proximity.close:
         if (!_alertedClose) {
-          _tts.speak(proximityAnnouncement(detection.proximity, detection.label));
+          _tts.playAudio('heads_up_obstacle_closeby.mp3');
           _alertedClose = true;
           _alertedNearby = true;
           _alertedImmediate = false;
         }
       case Proximity.nearby:
         if (!_alertedNearby) {
-          _tts.speak(proximityAnnouncement(detection.proximity, detection.label));
+          _tts.playAudio('heads_up_obstacle_closeby.mp3');
           _alertedNearby = true;
           _alertedClose = false;
           _alertedImmediate = false;

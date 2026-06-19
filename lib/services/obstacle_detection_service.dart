@@ -199,16 +199,4 @@ class ObstacleDetectionService {
   }
 }
 
-/// Format a proximity value as a human-friendly announcement.
-String proximityAnnouncement(Proximity proximity, String label) {
-  switch (proximity) {
-    case Proximity.immediate:
-      return 'Warning! $label very close. Stop.';
-    case Proximity.close:
-      return '$label close ahead. Slow down.';
-    case Proximity.nearby:
-      return '$label nearby.';
-    case Proximity.far:
-      return '$label detected in the distance.';
-  }
-}
+

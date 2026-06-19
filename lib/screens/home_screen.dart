@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _whereAmI() async {
     if (_whereAmIBusy) return;
     setState(() => _whereAmIBusy = true);
-    _tts.speak('Getting your location and surroundings.');
+    _tts.playAudio('getting_location_and_sorroundings.mp3');
 
     try {
       // 1. Device GPS — the source of truth for "where am I".
@@ -136,13 +136,11 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final msg =
-          'I can\'t get a reading right now. '
-          'Use the human-verified audio cue.';
-      _tts.speak(msg);
+      _tts.playAudio('cant_get_a_reading.mp3');
       setState(
         () => _lastReport = SceneReport(
-          spokenText: msg,
+          spokenText:
+              'I can\'t get a reading right now. Use the human-verified audio cue.',
           sources: const [],
           layersUsed: const {Layer.gps},
           degraded: true,
@@ -241,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               OpenCameraView(
                 onButtonPressed: () {
-                  _tts.speak('Starting camera. Please wait.');
+                  _tts.playAudio('starting_camera.mp3');
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const CameraScreen()),
                   );
@@ -252,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               OpenCameraView(
                 onButtonPressed: () {
-                  _tts.speak('Opening routing map.');
+                  _tts.playAudio('opening_routing_map.mp3');
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const RouteScreen()),
                   );
