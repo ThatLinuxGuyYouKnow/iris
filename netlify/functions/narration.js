@@ -10,7 +10,7 @@
 // cannot redirect to another model.
 
 const ENDPOINT = 'https://opencode.ai/zen/go/v1/chat/completions';
-const MODEL = 'kimi-k2.6';
+const MODEL = 'mimo-v2.5-pro';
 
 exports.handler = async (event) => {
   const corsHeaders = {

@@ -120,7 +120,8 @@ class SceneMerger {
       final t = answer.text.trim();
       if (t.isNotEmpty) {
         layers.add(Layer.mapsGrounding);
-        if (!usesGroundedVision) {
+        // Include grounding text if not using grounded vision, OR if vision failed
+        if (!usesGroundedVision || !visionResult.ok) {
           if (buffer.isNotEmpty) buffer.write(' ');
           buffer.write(t);
         }

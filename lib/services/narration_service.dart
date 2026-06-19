@@ -17,7 +17,7 @@ class NarrationService {
 
   static const String _endpoint =
       'https://opencode.ai/zen/go/v1/chat/completions';
-  static const String _model = 'kimi-k2.6';
+  static const String _model = 'mimo-v2.5-pro';
   static const String _proxyEndpoint = '/api/narration';
 
   static const String _apiKeyFromEnv = String.fromEnvironment(
