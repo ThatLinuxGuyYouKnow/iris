@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:iris/screens/camera_screen.dart';
 import 'package:iris/screens/route_screen.dart';
 import 'package:iris/services/camera_capture_service.dart';
-import 'package:iris/services/gemini_service.dart';
 import 'package:iris/services/geolocation_service.dart';
+import 'package:iris/services/narration_service.dart';
+import 'package:iris/services/reverse_geocode_service.dart';
 import 'package:iris/services/routing/campus_graph.dart';
 import 'package:iris/services/routing/sample_campus.dart';
 import 'package:iris/services/scene_merge.dart';
@@ -27,7 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextToSpeechService _tts = TextToSpeechService();
   final GeolocationService _geo = GeolocationService();
   final CameraCaptureService _camera = CameraCaptureService();
-  final GeminiService _gemini = GeminiService();
+  final NarrationService _narration = NarrationService();
+  final ReverseGeocodeService _reverseGeocode = ReverseGeocodeService();
   final CampusGraph _graph = loadCampusGraph();
 
   String _transcript = '';
@@ -98,17 +100,15 @@ class _HomeScreenState extends State<HomeScreen> {
       final graphFallback =
           'You are near ${nearest.label}, a known campus waypoint.';
 
-      // 4. Merge the two parallel Gemini calls. Each is independently
-      //    guarded by a timeout inside SceneMerger.
+      // 4. Merge the two parallel calls (narration + reverse geocode).
+      //    Each is independently guarded by a timeout inside SceneMerger.
       final report = await const SceneMerger().compose(
         visionCall: frame == null
             ? () async => throw StateError('camera unavailable')
-            : () => _gemini.describeScene(frame),
-        groundingCall: () => _gemini.groundedPlaceQuery(
-          'What building or entrance am I near, and where is the nearest '
-          'accessible entrance? Answer in one short sentence.',
-          latitude: fix.latitude,
-          longitude: fix.longitude,
+            : () => _narration.describeScene(frame),
+        groundingCall: () => _reverseGeocode.reverseGeocode(
+          fix.latitude,
+          fix.longitude,
         ),
         graphFallback: graphFallback,
       );
