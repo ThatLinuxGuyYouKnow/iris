@@ -75,23 +75,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// The three-layer "Where am I?" flow:
   ///   1. Device GPS (navigator.geolocation) -> lat/lng + accuracy
-  ///   2. Gemini Vision (camera frame) -> immediate surroundings
-  ///   3. Gemini Maps grounding (text, fed the GPS) -> place context + cites
-  /// Vision and grounding run in parallel via [SceneMerger]; either can fail
-  /// and the other still speaks. The human-verified audio cue is the floor.
+  ///   2. Kimi K2.6 Vision (camera frame) -> immediate surroundings
+  ///   3. RapidAPI reverse geocode (lat/lng) -> place context
+  /// Vision and reverse geocode run in parallel via [SceneMerger]; either can
+  /// fail and the other still speaks. The human-verified audio cue is the floor.
   Future<void> _whereAmI() async {
     if (_whereAmIBusy) return;
     setState(() => _whereAmIBusy = true);
     _tts.speak('Getting your location and surroundings.');
 
     try {
-      // 1. Device GPS — the source of truth for "where am I". Gemini does
+      // 1. Device GPS — the source of truth for "where am I".
       //    NOT locate the user; this coordinate is piped into grounding.
       final fix = await _geo.getPosition(highAccuracy: true);
       if (!mounted) return;
       setState(() => _lastFix = fix);
 
-      // 2. One camera frame for Gemini Vision. Released immediately.
+      // 2. One camera frame for Kimi K2.6 Vision. Released immediately.
       final frame = await _camera.captureJpegBase64();
 
       // 3. Graph fallback: nearest surveyed waypoint's label as a

@@ -27,22 +27,21 @@ class SceneReport {
   bool get hasSources => sources.isNotEmpty;
 }
 
-/// Merges the two parallel Gemini calls (vision + Maps grounding) into one
+/// Merges the two parallel calls (vision + reverse geocode) into one
 /// spoken report with a graceful degradation ladder:
 ///
-///   1. Both succeed  -> vision describes immediate surroundings, grounding
-///      adds place/entrance context + citations.
-///   2. Vision fails  -> fall back to `graphFallback` (pre-mapped hazard cue
-///      from the campus graph) or a non-hallucinated safe message.
-///   3. Grounding fails -> spoken text still works, just no citations.
-///   4. Both fail     -> graph fallback, else the human-override floor:
+///   1. Both succeed      -> vision describes immediate surroundings, reverse
+///      geocode adds place context.
+///   2. Vision fails      -> fall back to `graphFallback` (pre-mapped hazard
+///      cue from the campus graph) or a non-hallucinated safe message.
+///   3. Reverse geocode fails -> spoken text still works, just no place label.
+///   4. Both fail         -> graph fallback, else the human-override floor:
 ///      "I can't get a reading right now. Use the human-verified audio cue."
 ///
-/// This is the layer that answers the judge's "latency under poor
-/// connectivity" critique: the two Gemini calls run in parallel, each has an
-/// independent timeout, and neither failure breaks the other. The class is
-/// pure with respect to network — it takes the two calls as injected
-/// functions so it can be unit-tested without hitting the Gemini API.
+/// The two calls run in parallel, each has an independent timeout, and
+/// neither failure breaks the other. The class is pure with respect to
+/// network — it takes the two calls as injected functions so it can be
+/// unit-tested without hitting any API.
 class SceneMerger {
   const SceneMerger();
 
@@ -58,7 +57,7 @@ class SceneMerger {
     final failures = <String>[];
     bool degraded = false;
 
-    // Run both Gemini calls in parallel. Each is independently guarded by a
+    // Run both calls in parallel. Each is independently guarded by a
     // timeout and a catch so a slow/failing layer never blocks the other.
     final results = await Future.wait([
       _guard(visionCall, timeout, 'vision'),
