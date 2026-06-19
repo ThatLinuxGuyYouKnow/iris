@@ -3,13 +3,13 @@
 // Holds the OPENCODE_API_KEY server-side so it never lands in the client bundle.
 //
 // POST /api/narration
-// Body: { "messages": [...], "temperature": 0.2, "max_tokens": 200 }
+// Body: { "messages": [...], "temperature": 0.2, "max_tokens": 1000 }
 // Response: forwards the upstream response as-is.
 //
 // The model is pinned server-side to kimi-k2.6 so a compromised client
 // cannot redirect to another model.
 
-const ENDPOINT = 'https://opencode.ai/zen/v1/chat/completions';
+const ENDPOINT = 'https://opencode.ai/zen/go/v1/chat/completions';
 const MODEL = 'kimi-k2.6';
 
 exports.handler = async (event) => {
@@ -71,7 +71,7 @@ exports.handler = async (event) => {
     model: MODEL,
     messages,
     temperature: temperature ?? 0.2,
-    max_tokens: max_tokens ?? 200,
+    max_tokens: max_tokens ?? 1000,
   };
 
   try {

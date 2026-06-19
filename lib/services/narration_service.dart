@@ -16,7 +16,7 @@ class NarrationService {
   NarrationService._internal();
 
   static const String _endpoint =
-      'https://opencode.ai/zen/v1/chat/completions';
+      'https://opencode.ai/zen/go/v1/chat/completions';
   static const String _model = 'kimi-k2.6';
   static const String _proxyEndpoint = '/api/narration';
 
@@ -71,7 +71,7 @@ Describe ONLY what is concretely visible in the image.
     final body = {
       'messages': messages,
       'temperature': 0.2,
-      'max_tokens': 200,
+      'max_tokens': 1000,
     };
 
     final resp = await _post(body, timeout: timeout);
