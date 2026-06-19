@@ -91,16 +91,28 @@ class TextToSpeechService {
 
   web.HTMLAudioElement? _currentAudio;
 
-  void playAudio(String assetPath) {
+  Future<void> playAudio(String assetPath) async {
+    final completer = Completer<void>();
     try {
       _currentAudio?.pause();
       _currentAudio?.remove();
       final audio = web.HTMLAudioElement();
-      audio.src = 'assets/audio/$assetPath';
+      audio.src = 'assets/assets/audio/$assetPath';
+
+      audio.onended = (web.Event _) {
+        if (!completer.isCompleted) completer.complete();
+      }.toJS;
+
+      audio.onerror = (web.Event _) {
+        if (!completer.isCompleted) completer.complete();
+      }.toJS;
+
       audio.play();
       _currentAudio = audio;
+      await completer.future;
     } catch (e) {
       print('Error playing audio: $e');
+      if (!completer.isCompleted) completer.complete();
     }
   }
 

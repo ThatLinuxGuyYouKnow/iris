@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _whereAmI() async {
     if (_whereAmIBusy) return;
     setState(() => _whereAmIBusy = true);
-    _tts.playAudio('getting_location_and_sorroundings.mp3');
+    await _tts.playAudio('start_whereami_capture.mp3');
 
     try {
       // 1. Device GPS — the source of truth for "where am I".
