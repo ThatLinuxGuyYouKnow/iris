@@ -57,7 +57,7 @@ exports.handler = async (event) => {
   }
 
   const { messages, temperature, max_tokens } = parsed;
-  if (!messages || !Array.isArray(messages) || messages.isEmpty) {
+  if (!Array.isArray(messages) || messages.length === 0) {
     return {
       statusCode: 400,
       headers: corsHeaders,

@@ -6,12 +6,6 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA redirect: all routes serve index.html (Flutter web is a single-page app)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 # Proxy /api/gemini to the serverless function
 [[redirects]]
   from = "/api/gemini"
@@ -28,6 +22,12 @@
 [[redirects]]
   from = "/api/narration"
   to = "/.netlify/functions/narration"
+  status = 200
+
+# SPA redirect: all other routes serve index.html (Flutter web is a single-page app)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200
 
 # Prevent caching of index.html so new deploys are picked up immediately
