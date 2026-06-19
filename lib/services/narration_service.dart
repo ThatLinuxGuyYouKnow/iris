@@ -20,13 +20,14 @@ class NarrationService {
   static const String _model = 'kimi-k2.6';
   static const String _proxyEndpoint = '/api/narration';
 
-  static const String _apiKeyFromEnv =
-      String.fromEnvironment('OPENCODE_API_KEY', defaultValue: '');
+  static const String _apiKeyFromEnv = String.fromEnvironment(
+    'OPENCODE_API_KEY',
+    defaultValue: '',
+  );
 
   static String? _runtimeKeyOverride;
 
-  static void setRuntimeKeyOverride(String? key) =>
-      _runtimeKeyOverride = key;
+  static void setRuntimeKeyOverride(String? key) => _runtimeKeyOverride = key;
 
   String get _apiKey => _runtimeKeyOverride ?? _apiKeyFromEnv;
 
@@ -49,17 +50,23 @@ Describe ONLY what is concretely visible in the image.
     String base64Jpeg, {
     String userPrompt =
         'Describe what is immediately around me so I can walk safely.',
+    String? groundingContext,
     Duration timeout = const Duration(seconds: 8),
   }) async {
+    final grounding = groundingContext?.trim() ?? '';
+    final prompt = grounding.isEmpty
+        ? userPrompt
+        : '''$userPrompt
+
+Map context from GPS/reverse geocode: $grounding
+Use this only as location context. Do not claim a building or sign is visible unless it is readable in the image.''';
+
     final messages = [
-      {
-        'role': 'system',
-        'content': _visionSystemInstruction,
-      },
+      {'role': 'system', 'content': _visionSystemInstruction},
       {
         'role': 'user',
         'content': [
-          {'type': 'text', 'text': userPrompt},
+          {'type': 'text', 'text': prompt},
           {
             'type': 'image_url',
             'image_url': {'url': 'data:image/jpeg;base64,$base64Jpeg'},
@@ -68,11 +75,7 @@ Describe ONLY what is concretely visible in the image.
       },
     ];
 
-    final body = {
-      'messages': messages,
-      'temperature': 0.2,
-      'max_tokens': 1000,
-    };
+    final body = {'messages': messages, 'temperature': 0.2, 'max_tokens': 1000};
 
     final resp = await _post(body, timeout: timeout);
     final text = _extractText(resp);
@@ -89,12 +92,11 @@ Describe ONLY what is concretely visible in the image.
     if (_useDirectMode) {
       final payload = {...body, 'model': _model};
       return http
-          .post(Uri.parse(_endpoint),
-              headers: {
-                ...headers,
-                'Authorization': 'Bearer $_apiKey',
-              },
-              body: jsonEncode(payload))
+          .post(
+            Uri.parse(_endpoint),
+            headers: {...headers, 'Authorization': 'Bearer $_apiKey'},
+            body: jsonEncode(payload),
+          )
           .timeout(timeout);
     }
 

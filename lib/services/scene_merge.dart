@@ -45,8 +45,12 @@ class SceneReport {
 class SceneMerger {
   const SceneMerger();
 
+  static const String cameraRaiseCue =
+      'For a better reading, raise your phone and point the camera toward a nearby building or sign.';
+
   Future<SceneReport> compose({
     required Future<String> Function() visionCall,
+    Future<String> Function(GroundedAnswer? grounding)? groundedVisionCall,
     required Future<GroundedAnswer> Function() groundingCall,
     String? graphFallback,
     Duration timeout = const Duration(seconds: 8),
@@ -57,15 +61,32 @@ class SceneMerger {
     final failures = <String>[];
     bool degraded = false;
 
-    // Run both calls in parallel. Each is independently guarded by a
-    // timeout and a catch so a slow/failing layer never blocks the other.
-    final results = await Future.wait([
-      _guard(visionCall, timeout, 'vision'),
-      _guard(groundingCall, timeout, 'grounding'),
-    ]);
+    final _GuardedResult<String> visionResult;
+    final _GuardedResult<GroundedAnswer> groundingResult;
+    final usesGroundedVision = groundedVisionCall != null;
 
-    final visionResult = results[0] as _GuardedResult<String>;
-    final groundingResult = results[1] as _GuardedResult<GroundedAnswer>;
+    if (!usesGroundedVision) {
+      // Run both calls in parallel. Each is independently guarded by a
+      // timeout and a catch so a slow/failing layer never blocks the other.
+      final results = await Future.wait([
+        _guard(visionCall, timeout, 'vision'),
+        _guard(groundingCall, timeout, 'grounding'),
+      ]);
+
+      visionResult = results[0] as _GuardedResult<String>;
+      groundingResult = results[1] as _GuardedResult<GroundedAnswer>;
+    } else {
+      // Grounded mode: get the place context first, then let Kimi produce one
+      // usable narration from both the camera frame and map result.
+      groundingResult = await _guard(groundingCall, timeout, 'grounding');
+      visionResult = await _guard(
+        () => groundedVisionCall(
+          groundingResult.ok ? groundingResult.value : null,
+        ),
+        timeout,
+        'vision',
+      );
+    }
 
     // ---- Vision layer ----
     String? spokenVision;
@@ -88,7 +109,8 @@ class SceneMerger {
         buffer.write(graphFallback.trim());
       } else {
         buffer.write(
-            "I can't see my surroundings right now. Use the human-verified audio cue.");
+          "I can't see my surroundings right now. Use the human-verified audio cue.",
+        );
       }
     }
 
@@ -98,8 +120,10 @@ class SceneMerger {
       final t = answer.text.trim();
       if (t.isNotEmpty) {
         layers.add(Layer.mapsGrounding);
-        if (buffer.isNotEmpty) buffer.write(' ');
-        buffer.write(t);
+        if (!usesGroundedVision) {
+          if (buffer.isNotEmpty) buffer.write(' ');
+          buffer.write(t);
+        }
         sources.addAll(answer.sources);
       }
     } else {
@@ -107,6 +131,11 @@ class SceneMerger {
       failures.add('grounding: ${groundingResult.error}');
       // Grounding failure is silent in speech — no citations is acceptable.
       // The user still gets a usable scene description from vision/graph.
+    }
+
+    if (buffer.isNotEmpty) {
+      buffer.write(' ');
+      buffer.write(cameraRaiseCue);
     }
 
     final note = failures.isEmpty
@@ -133,7 +162,9 @@ class SceneMerger {
       final value = await call().timeout(timeout);
       return _GuardedResult<T>.ok(value);
     } on TimeoutException {
-      return _GuardedResult<T>.fail('$label timed out after ${timeout.inSeconds}s');
+      return _GuardedResult<T>.fail(
+        '$label timed out after ${timeout.inSeconds}s',
+      );
     } catch (e) {
       return _GuardedResult<T>.fail('$label: $e');
     }
@@ -154,10 +185,6 @@ class _GuardedResult<T> {
   final T? value;
   final String? error;
   final bool ok;
-  const _GuardedResult.ok(this.value)
-      : error = null,
-        ok = true;
-  const _GuardedResult.fail(this.error)
-      : value = null,
-        ok = false;
+  const _GuardedResult.ok(this.value) : error = null, ok = true;
+  const _GuardedResult.fail(this.error) : value = null, ok = false;
 }

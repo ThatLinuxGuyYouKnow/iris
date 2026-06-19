@@ -77,8 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ///   1. Device GPS (navigator.geolocation) -> lat/lng + accuracy
   ///   2. Kimi K2.6 Vision (camera frame) -> immediate surroundings
   ///   3. RapidAPI reverse geocode (lat/lng) -> place context
-  /// Vision and reverse geocode run in parallel via [SceneMerger]; either can
-  /// fail and the other still speaks. The human-verified audio cue is the floor.
+  /// Reverse geocode runs before Kimi when available so the thinking model can
+  /// turn the place context + camera frame into one usable narration. The
+  /// human-verified audio cue is the floor.
   Future<void> _whereAmI() async {
     if (_whereAmIBusy) return;
     setState(() => _whereAmIBusy = true);
@@ -100,16 +101,21 @@ class _HomeScreenState extends State<HomeScreen> {
       final graphFallback =
           'You are near ${nearest.label}, a known campus waypoint.';
 
-      // 4. Merge the two parallel calls (narration + reverse geocode).
-      //    Each is independently guarded by a timeout inside SceneMerger.
+      // 4. Get reverse geocode first, then pass that context with the frame to
+      //    Kimi so the final narration is generated from both signals.
+      final visionCall = frame == null
+          ? () async => throw StateError('camera unavailable')
+          : () => _narration.describeScene(frame);
       final report = await const SceneMerger().compose(
-        visionCall: frame == null
-            ? () async => throw StateError('camera unavailable')
-            : () => _narration.describeScene(frame),
-        groundingCall: () => _reverseGeocode.reverseGeocode(
-          fix.latitude,
-          fix.longitude,
-        ),
+        visionCall: visionCall,
+        groundedVisionCall: frame == null
+            ? (_) async => throw StateError('camera unavailable')
+            : (grounding) => _narration.describeScene(
+                frame,
+                groundingContext: grounding?.text ?? graphFallback,
+              ),
+        groundingCall: () =>
+            _reverseGeocode.reverseGeocode(fix.latitude, fix.longitude),
         graphFallback: graphFallback,
       );
 
@@ -160,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
       case SttStatus.unavailable:
         return 'Speech recognition unavailable.';
       case SttStatus.stopped:
-      default:
         return 'Tap or say a command';
     }
   }
@@ -263,6 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.my_location,
                 label: _whereAmIBusy ? 'Locating…' : 'Where am I?',
               ),
+              const SizedBox(height: 12),
+              _cameraGuidanceCard(),
 
               if (_lastReport != null) ...[
                 const SizedBox(height: 24),
@@ -271,6 +278,31 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _cameraGuidanceCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(14),
+      decoration: kGlassDecoration(opacity: 0.08, borderRadius: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.center_focus_strong_outlined,
+            size: 22,
+            color: kPrimaryAccent,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              SceneMerger.cameraRaiseCue,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
       ),
     );
   }
