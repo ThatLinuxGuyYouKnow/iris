@@ -2,6 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:iris/services/knowledge_bank.dart';
+
+class KnowledgeResult {
+  final String text;
+  final String? nodeId;
+
+  const KnowledgeResult({required this.text, this.nodeId});
+
+  bool get hasDestination => nodeId != null && nodeId!.isNotEmpty;
+}
 
 class NarrationException implements Exception {
   final String message;
@@ -35,6 +45,8 @@ class NarrationService {
 
   bool get _useDirectMode => _apiKey.isNotEmpty;
 
+  final KnowledgeBank _knowledgeBank = KnowledgeBank();
+
   static const String _visionSystemInstruction = '''
 You are a navigation assistant for a visually impaired walker on a university campus.
 Describe ONLY what is concretely visible in the image.
@@ -45,6 +57,41 @@ Describe ONLY what is concretely visible in the image.
 - Prioritise obstacles, stairs, kerbs, doors, construction, and readable signage.
 - Keep the whole reply under 60 words, in plain spoken English, no preamble.
 ''';
+
+  static final _navPattern = RegExp(r'\n?\[NAV:(\w+)\]\s*$');
+
+  KnowledgeResult _parseNavHint(String raw) {
+    final match = _navPattern.firstMatch(raw);
+    if (match != null) {
+      final nodeId = match.group(1)!;
+      final text = raw.replaceFirst(_navPattern, '').trim();
+      return KnowledgeResult(text: text, nodeId: nodeId);
+    }
+    return KnowledgeResult(text: raw.trim());
+  }
+
+  Future<KnowledgeResult> queryKnowledge(
+    String userQuery, {
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final systemPrompt = _knowledgeBank.buildSystemPrompt();
+    final messages = [
+      {'role': 'system', 'content': systemPrompt},
+      {'role': 'user', 'content': userQuery},
+    ];
+    final body = {'messages': messages, 'temperature': 0.2, 'max_tokens': 500};
+    final resp = await _post(body, timeout: timeout);
+    final text = _extractText(resp);
+    return _parseNavHint(text);
+  }
+
+  KnowledgeResult queryLocal(String userQuery) {
+    final entry = _knowledgeBank.search(userQuery);
+    if (entry != null) {
+      return KnowledgeResult(text: entry.answer, nodeId: entry.nodeId);
+    }
+    return const KnowledgeResult(text: "I don't have that information yet.");
+  }
 
   Future<String> describeScene(
     String base64Jpeg, {

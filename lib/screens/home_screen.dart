@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final NarrationService _narration = NarrationService();
   final ReverseGeocodeService _reverseGeocode = ReverseGeocodeService();
   final CampusGraph _graph = loadCampusGraph();
+  final TextEditingController _textController = TextEditingController();
 
   String _transcript = '';
   SttStatus _sttStatus = SttStatus.stopped;
@@ -39,6 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _whereAmIBusy = false;
   SceneReport? _lastReport;
   GeoPosition? _lastFix;
+
+  // Knowledge query state
+  bool _queryBusy = false;
+  String _answerText = '';
+  String? _destinationNodeId;
 
   @override
   void initState() {
@@ -51,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _sttService.onStatus.listen((status) {
       if (mounted) {
         setState(() => _sttStatus = status);
+        if (status == SttStatus.stopped && _transcript.isNotEmpty) {
+          _submitQuery(_transcript);
+        }
       }
     });
   }
@@ -60,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_sttService.isListening) {
       _sttService.stopListening();
     }
+    _textController.dispose();
     super.dispose();
   }
 
@@ -67,10 +77,54 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_sttService.isListening) {
       _sttService.stopListening();
     } else {
-      setState(() => _transcript = ''); // Clear old transcript on restart
+      setState(() {
+        _transcript = '';
+        _answerText = '';
+        _destinationNodeId = null;
+      });
       _sttService.startListening();
       _tts.speak("Listening.");
     }
+  }
+
+  Future<void> _submitQuery(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty || _queryBusy) return;
+
+    setState(() {
+      _queryBusy = true;
+    });
+
+    try {
+      final result = await _narration.queryKnowledge(trimmed);
+      if (!mounted) return;
+      setState(() {
+        _answerText = result.text;
+        _destinationNodeId = result.nodeId;
+      });
+      _tts.speak(result.text);
+    } catch (_) {
+      final local = _narration.queryLocal(trimmed);
+      if (!mounted) return;
+      setState(() {
+        _answerText = local.text;
+        _destinationNodeId = local.nodeId;
+      });
+      _tts.speak(local.text);
+    } finally {
+      if (mounted) setState(() => _queryBusy = false);
+    }
+  }
+
+  void _submitTextQuery() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+    _textController.clear();
+    setState(() {
+      _transcript = '';
+      _destinationNodeId = null;
+    });
+    _submitQuery(text);
   }
 
   /// The three-layer "Where am I?" flow:
@@ -206,13 +260,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   padding: const EdgeInsets.all(20),
                   decoration: kGlassDecoration(),
-                  child: Text(
-                    '"$_transcript"',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: kPrimaryAccent,
-                    ),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      Text(
+                        '"$_transcript"',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: kPrimaryAccent,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (_queryBusy) ...[
+                        const SizedBox(height: 12),
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
 
@@ -224,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 isListening: _sttStatus == SttStatus.listening,
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               Text(
                 _getStatusText(),
@@ -234,6 +300,157 @@ class _HomeScreenState extends State<HomeScreen> {
                       : kTextSecondary,
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              // ── Text Input Box ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        enabled: !_queryBusy,
+                        decoration: InputDecoration(
+                          hintText: 'or type your question here...',
+                          hintStyle: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: kTextSecondary.withValues(alpha: 0.6),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: kDivider),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: kDivider.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: kPrimaryAccent,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        onSubmitted: (_) => _submitTextQuery(),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    InkWell(
+                      onTap: _queryBusy ? null : _submitTextQuery,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: _queryBusy
+                              ? kPrimaryAccent.withValues(alpha: 0.4)
+                              : kPrimaryAccent,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: _queryBusy
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Answer Card ──
+              if (_answerText.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kTertiaryAccent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: kTertiaryAccent.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Icon(
+                              Icons.lightbulb_outline_rounded,
+                              color: kTertiaryAccent,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _answerText,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(
+                                color: kTextPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_destinationNodeId != null) ...[
+                        const SizedBox(height: 14),
+                        Center(
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              _tts.playAudio('opening_routing_map.mp3');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => RouteScreen(
+                                    endNodeId: _destinationNodeId,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.directions, size: 20),
+                            label: Text(
+                              'Get directions to ${_graph.node(_destinationNodeId!)?.label ?? _destinationNodeId!}',
+                            ),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: kPrimaryAccent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 40),
 

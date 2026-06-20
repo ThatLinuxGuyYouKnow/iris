@@ -14,7 +14,10 @@ import 'package:iris/themes/theme.dart';
 import 'package:latlong2/latlong.dart';
 
 class RouteScreen extends StatefulWidget {
-  const RouteScreen({super.key});
+  final String? startNodeId;
+  final String? endNodeId;
+
+  const RouteScreen({super.key, this.startNodeId, this.endNodeId});
 
   @override
   State<RouteScreen> createState() => _RouteScreenState();
@@ -64,9 +67,30 @@ class _RouteScreenState extends State<RouteScreen> {
   Future<void> _start() async {
     await RouteStore.instance.init();
     _hazards = await RouteStore.instance.listHazards();
-    if (_nodes.length >= 2) {
-      _startId = _nodes.first.id;
-      _endId = _nodes[3].id;
+
+    if (widget.endNodeId != null && _graph.node(widget.endNodeId!) != null) {
+      _endId = widget.endNodeId;
+    }
+
+    if (widget.startNodeId != null && _graph.node(widget.startNodeId!) != null) {
+      _startId = widget.startNodeId;
+    } else {
+      try {
+        final fix = await _geo.getPosition(highAccuracy: true);
+        final nearest = _graph.nearestNode(
+          LatLng(fix.latitude, fix.longitude),
+        );
+        _startId = nearest.id;
+      } catch (_) {
+        _startId = _nodes.isNotEmpty ? _nodes.first.id : null;
+      }
+    }
+
+    if (_startId != null && _endId != null) {
+      _recompute();
+    } else if (_nodes.length >= 2) {
+      _startId ??= _nodes.first.id;
+      _endId ??= _nodes[3].id;
       _recompute();
     }
     _startLocationWatch();
