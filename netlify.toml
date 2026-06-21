@@ -36,8 +36,26 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
-# Cache Flutter's main.dart.js aggressively (it's content-hashed)
+# Flutter web does NOT content-hash main.dart.js, so it must revalidate on every request.
+# Caching it immutably would serve stale JS from a previous deploy.
 [[headers]]
   for = "/main.dart.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# flutter_bootstrap.js and flutter.js are also unhashed and change between builds
+[[headers]]
+  for = "/flutter_bootstrap.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/flutter.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# Cache CanvasKit WASM assets (content-hashed by Flutter engine revision)
+[[headers]]
+  for = "/canvaskit/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
