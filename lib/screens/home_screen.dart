@@ -46,6 +46,18 @@ class _HomeScreenState extends State<HomeScreen> {
   String _answerText = '';
   String? _destinationNodeId;
 
+  // Demo mode — bypasses flaky STT with simulated transcripts and quick-tap chips
+  bool _demoMode = false;
+
+  static const List<String> _demoQuestions = [
+    'Where do I go to register my courses?',
+    'Where is the library?',
+    'How do I pay my school fees?',
+    'Where can I get my student ID card?',
+    'Where is the health centre?',
+    'How do I get my academic transcript?',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -76,15 +88,49 @@ class _HomeScreenState extends State<HomeScreen> {
   void _toggleListening() {
     if (_sttService.isListening) {
       _sttService.stopListening();
-    } else {
-      setState(() {
-        _transcript = '';
-        _answerText = '';
-        _destinationNodeId = null;
-      });
-      _sttService.startListening();
-      _tts.speak("Listening.");
+      return;
     }
+
+    setState(() {
+      _transcript = '';
+      _answerText = '';
+      _destinationNodeId = null;
+    });
+
+    if (_demoMode || !_sttService.isSupported) {
+      _simulateVoiceInput();
+      return;
+    }
+
+    _sttService.startListening();
+    _tts.speak("Listening.");
+  }
+
+  void _simulateVoiceInput() {
+    final question = (_demoQuestions..shuffle()).first;
+    setState(() {
+      _sttStatus = SttStatus.listening;
+    });
+
+    // Brief delay to simulate listening, then deliver the transcript
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      setState(() {
+        _transcript = question;
+        _sttStatus = SttStatus.stopped;
+      });
+      _submitQuery(question);
+    });
+  }
+
+  void _tapDemoQuestion(String question) {
+    setState(() {
+      _textController.clear();
+      _transcript = '';
+      _answerText = '';
+      _destinationNodeId = null;
+    });
+    _submitQuery(question);
   }
 
   Future<void> _submitQuery(String query) async {
@@ -207,6 +253,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getStatusText() {
+    if (_demoMode) {
+      if (_sttStatus == SttStatus.listening) {
+        return 'Simulating voice input...';
+      }
+      return 'Demo mode — tap mic or a question';
+    }
     if (!_sttService.isSupported) {
       return 'Voice recognition not supported';
     }
@@ -238,6 +290,51 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.bold,
                   color: kPrimaryAccent,
                   fontSize: 64,
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              // ── Demo Mode Toggle ──
+              GestureDetector(
+                onTap: () => setState(() => _demoMode = !_demoMode),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _demoMode
+                        ? kTertiaryAccent.withValues(alpha: 0.12)
+                        : kDivider.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _demoMode
+                          ? kTertiaryAccent.withValues(alpha: 0.5)
+                          : kDivider.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _demoMode
+                            ? Icons.science_outlined
+                            : Icons.science_outlined,
+                        size: 16,
+                        color: _demoMode ? kTertiaryAccent : kTextSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _demoMode ? 'Demo ON' : 'Demo OFF',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(
+                          color: _demoMode ? kTertiaryAccent : kTextSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -300,6 +397,64 @@ class _HomeScreenState extends State<HomeScreen> {
                       : kTextSecondary,
                 ),
               ),
+
+              // ── Demo / Fallback Question Chips ──
+              if (_demoMode ||
+                  _sttStatus == SttStatus.unavailable ||
+                  _sttStatus == SttStatus.error) ...[
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _demoMode ? 'Try asking:' : 'Voice unavailable — try typing or tapping:',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: kTextSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _demoQuestions.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final q = _demoQuestions[index];
+                      return GestureDetector(
+                        onTap: _queryBusy ? null : () => _tapDemoQuestion(q),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _demoMode
+                                ? kPrimaryAccent.withValues(alpha: 0.08)
+                                : kPrimaryAccent.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: kPrimaryAccent.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Text(
+                            q,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(
+                              color: kPrimaryAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 20),
 
