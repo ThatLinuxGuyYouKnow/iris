@@ -12,7 +12,7 @@
     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
     This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    the `--base-href` argument provided during `flutter build`.
   -->
   <base href="$FLUTTER_BASE_HREF">
 
@@ -29,15 +29,66 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>iris</title>
+  <title>Iris</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- TensorFlow.js + COCO-SSD for on-device obstacle detection in the PWA -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
   <script src="obstacle_detection.js" defer></script>
+
+  <style>
+    #iris-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+    #iris-splash img {
+      width: 192px;
+      height: 192px;
+      object-fit: contain;
+    }
+    #iris-splash .iris-splash-title {
+      margin-top: 18px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #00C9FF;
+    }
+    #iris-splash.gone {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
+  <div id="iris-splash">
+    <img src="favicon.png" alt="Iris logo" />
+    <div class="iris-splash-title">Iris</div>
+  </div>
+
+  <script>
+    (function () {
+      var splash = document.getElementById('iris-splash');
+      function hideSplash() {
+        if (!splash) return;
+        splash.classList.add('gone');
+        setTimeout(function () { if (splash && splash.parentNode) splash.parentNode.removeChild(splash); }, 500);
+      }
+      // Hide once Flutter has painted its first frame.
+      window.addEventListener('flutter-first-frame', hideSplash);
+      // Fallback in case the event never fires.
+      setTimeout(hideSplash, 4000);
+    })();
+  </script>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -45,7 +96,7 @@
 
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
-    -->
+  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

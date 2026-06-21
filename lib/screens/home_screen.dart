@@ -348,116 +348,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Transcript Display
-              if (_transcript.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  decoration: kGlassDecoration(),
-                  child: Column(
-                    children: [
-                      Text(
-                        '"$_transcript"',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: kPrimaryAccent,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (_queryBusy) ...[
-                        const SizedBox(height: 12),
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-              const SizedBox(height: 20),
-
-              StartAudioCaptureWidget(
-                buttonText: 'Use voice controls',
-                onButtonPressed: _toggleListening,
-                isListening: _sttStatus == SttStatus.listening,
-              ),
-
-              const SizedBox(height: 20),
-
-              Text(
-                _getStatusText(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: _sttStatus == SttStatus.error
-                      ? Colors.redAccent
-                      : kTextSecondary,
-                ),
-              ),
-
-              // ── Demo / Fallback Question Chips ──
-              if (_demoMode ||
-                  _sttStatus == SttStatus.unavailable ||
-                  _sttStatus == SttStatus.error) ...[
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    _demoMode ? 'Try asking:' : 'Voice unavailable — try typing or tapping:',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: kTextSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 36,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _demoQuestions.length,
-                    separatorBuilder: (context, index) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final q = _demoQuestions[index];
-                      return GestureDetector(
-                        onTap: _queryBusy ? null : () => _tapDemoQuestion(q),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _demoMode
-                                ? kPrimaryAccent.withValues(alpha: 0.08)
-                                : kPrimaryAccent.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: kPrimaryAccent.withValues(alpha: 0.15),
-                            ),
-                          ),
-                          child: Text(
-                            q,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.copyWith(
-                              color: kPrimaryAccent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
               // ── Text Input Box ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -468,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         controller: _textController,
                         enabled: !_queryBusy,
                         decoration: InputDecoration(
-                          hintText: 'or type your question here...',
+                          hintText: 'Ask Iris about campus services...',
                           hintStyle: Theme.of(
                             context,
                           ).textTheme.bodySmall?.copyWith(
@@ -603,6 +493,114 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ],
+                  ),
+                ),
+              ],
+
+              // Transcript Display
+              if (_transcript.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  decoration: kGlassDecoration(),
+                  child: Column(
+                    children: [
+                      Text(
+                        '"$_transcript"',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: kPrimaryAccent,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (_queryBusy) ...[
+                        const SizedBox(height: 12),
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              StartAudioCaptureWidget(
+                buttonText: 'Use voice controls',
+                onButtonPressed: _toggleListening,
+                isListening: _sttStatus == SttStatus.listening,
+              ),
+
+              const SizedBox(height: 20),
+
+              Text(
+                _getStatusText(),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _sttStatus == SttStatus.error
+                      ? Colors.redAccent
+                      : kTextSecondary,
+                ),
+              ),
+
+              // ── Demo / Fallback Question Chips ──
+              if (_demoMode ||
+                  _sttStatus == SttStatus.unavailable ||
+                  _sttStatus == SttStatus.error) ...[
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _demoMode ? 'Try asking:' : 'Voice unavailable — try typing or tapping:',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: kTextSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _demoQuestions.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final q = _demoQuestions[index];
+                      return GestureDetector(
+                        onTap: _queryBusy ? null : () => _tapDemoQuestion(q),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _demoMode
+                                ? kPrimaryAccent.withValues(alpha: 0.08)
+                                : kPrimaryAccent.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: kPrimaryAccent.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Text(
+                            q,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(
+                              color: kPrimaryAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

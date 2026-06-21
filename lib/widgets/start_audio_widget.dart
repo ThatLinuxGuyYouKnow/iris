@@ -20,8 +20,8 @@ class StartAudioCaptureWidget extends StatefulWidget {
 
 class _StartAudioCaptureWidgetState extends State<StartAudioCaptureWidget>
     with SingleTickerProviderStateMixin {
-  static const double _buttonSize = 200;
-  static const double _ringScale = 1.6;
+  static const double _buttonSize = 120;
+  static const double _ringScale = 1.5;
 
   late final AnimationController _controller;
 
@@ -95,7 +95,7 @@ class _StartAudioCaptureWidgetState extends State<StartAudioCaptureWidget>
                 child: Icon(
                   widget.isListening ? Icons.mic : Icons.mic_none, 
                   color: Colors.white, 
-                  size: 80,
+                  size: 48,
                 ),
               ),
             ),
@@ -131,11 +131,11 @@ class _PulsingRing extends StatelessWidget {
           child: Opacity(
             opacity: opacity,
             child: Container(
-              height: 200,
-              width: 200,
+              height: 120,
+              width: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: color, width: 4),
+                border: Border.all(color: color, width: 3),
               ),
             ),
           ),
